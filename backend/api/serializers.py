@@ -139,75 +139,68 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             "does_not_exist": "Ошибка в Тэге, id = {pk_value} не существует"}}}
 
     def validate(self, data):
-        """Проверка валидности."""
-        name = data.get('name')
-        ingredients = data.get('ingredients')
-        tags = data.get('tags')
-        cooking_time = data.get('cooking_time')
-        image = data.get('image')
+        self.validate_name(data)
+        self.validate_ingredients(data)
+        self.validate_tags(data)
+        self.validate_cooking_time(data)
+        self.validate_image(data)
 
+        return data
+
+    def validate_name(self, data):
+        name = data.get('name')
         if len(name) < 4:
             raise serializers.ValidationError(
-                {'name': 'Название рецепта минимум 4 символа'}
-            )
+                {'name': 'Name must be at least 4 characters'})
 
+    def validate_ingredients(self, data):
+        ingredients = data.get('ingredients')
         if not ingredients:
             raise serializers.ValidationError(
-                {'ingredients': 'Загрузите ингредиенты'}
-            )
+                {'ingredients': 'Please upload ingredients'})
 
         ingredient_ids = [item['id'] for item in ingredients]
         if not Ingredient.objects.filter(id__in=ingredient_ids).exists():
-            invalid_ingredients = (
-                set(ingredient_ids) - set(Ingredient.objects.values_list(
-                    'id', flat=True
-                ))
-            )
+            invalid_ingredients = set(ingredient_ids) - set(
+                Ingredient.objects.values_list('id', flat=True))
             raise serializers.ValidationError(
-                {
-                    'ingredients': [
-                        f'Ингредиента с id - {ingredient_id} нет'
-                        for ingredient_id in invalid_ingredients
-                    ]
-                }
-            )
+                {'ingredients':
+                 [f'Ingredient with id - {ingredient_id} does not exist'
+                  for ingredient_id in invalid_ingredients]})
 
         if len(ingredients) != len(set(ingredient_ids)):
             raise serializers.ValidationError(
-                'Ингредиенты не должны повторяться!'
-            )
-
-        if len(tags) != len(set(tags)):
-            raise serializers.ValidationError({
-                'tags': 'Тэги не должны повторяться!'
-            })
+                'Ingredients must not be repeated!')
 
         if any(item['amount'] < 1 for item in ingredients):
             raise serializers.ValidationError(
-                {'amount': 'Минимальное количество ингредиента 1'}
-            )
+                {'amount': 'Minimum ingredient amount is 1'})
 
-        if cooking_time is None:
+    def validate_tags(self, data):
+        tags = data.get('tags')
+        if len(tags) != len(set(tags)):
             raise serializers.ValidationError(
-                {'cooking_time':
-                    'Поле cooking_time обязательно для заполнения'}
-            )
-        if not 1 <= cooking_time:
-            raise serializers.ValidationError(
-                {'cooking_time':
-                    'Время приготовления блюда должно быть не меньше 1 минуты'}
-            )
-
-        if image is None:
-            raise serializers.ValidationError(
-                {'image': 'Загрузите изображение'}
-            )
+                {'tags': 'Tags must not be repeated!'})
 
         if not tags:
             raise serializers.ValidationError(
-                {'tags': 'Поле tags обязательно для заполнения'}
-            )
-        return data
+                {'tags': 'Tags field is required'})
+
+    def validate_cooking_time(self, data):
+        cooking_time = data.get('cooking_time')
+        if cooking_time is None:
+            raise serializers.ValidationError(
+                {'cooking_time': 'Cooking time field is required'})
+
+        if cooking_time < 1:
+            raise serializers.ValidationError(
+                {'cooking_time': 'Cooking time must be at least 1 minute'})
+
+    def validate_image(self, data):
+        image = data.get('image')
+        if image is None:
+            raise serializers.ValidationError(
+                {'image': 'Please upload an image'})
 
     def create_ingredients(self, ingredients, recipe):
         for ingredient in ingredients:
