@@ -3,13 +3,16 @@ import csv
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import IntegrityError
+
 from recipes.models import Tag
 
 
 class Command(BaseCommand):
+    """Загрузка данных из csv файлов."""
     help = 'Загрузка данных из csv файлов'
 
     def handle(self, *args, **options):
+        """Метод обработчик."""
         with open(
             f'{settings.BASE_DIR}/data/tags.csv',
             'r',
@@ -22,6 +25,7 @@ class Command(BaseCommand):
                 )
             except IntegrityError:
                 return 'Такие Теги уже есть...'
-        return (f'Теги успешно загружены -> '
-                f'{(", ").join([_.get("name") for _ in Tag.objects.values()])}'
-                )
+        return (
+            f'Теги успешно загружены:'
+            f'{(", ").join([_.get("name") for _ in Tag.objects.values()])}'
+        )

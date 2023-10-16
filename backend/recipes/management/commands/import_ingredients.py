@@ -3,13 +3,16 @@ import csv
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import IntegrityError
+
 from recipes.models import Ingredient
 
 
 class Command(BaseCommand):
+    """Загрузка данных из csv файлов."""
     help = 'Загрузка данных из csv файлов'
 
     def handle(self, *args, **options):
+        """Метод обработчик."""
         with open(
             f'{settings.BASE_DIR}/data/ingredients.csv',
             'r',
@@ -23,4 +26,5 @@ class Command(BaseCommand):
             except IntegrityError:
                 return 'Такие ингредиенты уже есть...'
         return (
-            f'{Ingredient.objects.count()} - ингредиентов успешно загружено')
+            f'Ингредиенты успешно загружены: {Ingredient.objects.count()}'
+        )
