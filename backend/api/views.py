@@ -8,7 +8,7 @@ from recipes.models import (FavoriteRecipe, Ingredient, Recipe, ShoppingCart,
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (SAFE_METHODS, IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly, AllowAny)
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 
@@ -176,7 +176,7 @@ class FavoriteRecipeViewSet(CreateDestroyViewSet):
                     favorite_recipe_id=recipe_id).exists():
             return Response({'errors': 'Рецепт не в избранном'},
                             status=status.HTTP_400_BAD_REQUEST)
-        
+
         get_object_or_404(
             FavoriteRecipe,
             user=request.user,
@@ -210,13 +210,18 @@ class ShoppingCartViewSet(CreateDestroyViewSet):
     @action(methods=('delete',), detail=True)
     def delete(self, request, recipe_id):
         u = request.user
-        cart_item = ShoppingCart.objects.filter(user=u, recipe_id=recipe_id).first()
+        cart_item = ShoppingCart.objects.filter(
+            user=u,
+            recipe_id=recipe_id
+        ).first()
 
         if not cart_item:
-            return Response({'errors': 'Рецепта нет в корзине'}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response({'errors': 'Рецепта нет в корзине'},
+                            status=status.HTTP_404_NOT_FOUND)
+
         if not cart_item:
-            return Response({'errors': 'Рецепта нет в корзине'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'errors': 'Рецепта нет в корзине'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         cart_item.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
