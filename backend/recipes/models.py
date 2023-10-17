@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 
 User = get_user_model()
 
@@ -20,7 +21,12 @@ class Tag(models.Model):
         blank=True,
         unique=True,
         verbose_name='Цвет тега',
+        validators=[RegexValidator(
+            regex='^#[0-9a-fA-F]{6}$',
+            message='Цвет тега должен быть в формате HEX (#RRGGBB).',
+        )]
     )
+
     slug = models.SlugField(
         max_length=200,
         unique=True,

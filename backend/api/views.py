@@ -12,7 +12,6 @@ from rest_framework.response import Response
 from recipes.models import (FavoriteRecipe, Ingredient, Recipe, ShoppingCart,
                             Tag)
 from users.models import CustomUser, Subscribe
-
 from .filters import IngredientFilter, RecipesFilter
 from .mixins import CreateDestroyViewSet
 from .permissions import IsAuthorOrReadOnly
@@ -39,7 +38,7 @@ class CustomUserViewSet(UserViewSet):
     def get_permissions(self):
         """Права доступа."""
         if self.action == 'me':
-            self.permission_classes = (IsAuthenticated,)
+            return [IsAuthenticated()]
         return super().get_permissions()
 
     @action(
