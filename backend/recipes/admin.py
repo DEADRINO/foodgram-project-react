@@ -46,8 +46,9 @@ class RecipeAdmin(admin.ModelAdmin):
     empy_value_display = '-пусто-'
 
     def favorite_count(self, obj):
-        """Поле для отображения количества избранных рецептов."""
-        return obj.favorite_recipe_count
+        """Количество избранных рецептов."""
+        return obj.obj_count
+    favorite_count.short_description = 'Количество избранных рецептов'
 
     def get_queryset(self, request):
         """Метод получения queryset."""

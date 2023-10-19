@@ -2,16 +2,16 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
+from recipes.models import (FavoriteRecipe, Ingredient, Recipe, ShoppingCart,
+                            Tag)
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import (SAFE_METHODS, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
-
-from recipes.models import (FavoriteRecipe, Ingredient, Recipe, ShoppingCart,
-                            Tag)
 from users.models import CustomUser, Subscribe
+
 from .filters import IngredientFilter, RecipesFilter
 from .mixins import CreateDestroyViewSet
 from .permissions import IsAuthorOrReadOnly
@@ -38,7 +38,7 @@ class CustomUserViewSet(UserViewSet):
     def get_permissions(self):
         """Права доступа."""
         if self.action == 'me':
-            return [IsAuthenticated()]
+            return (IsAuthenticated,)
         return super().get_permissions()
 
     @action(
@@ -59,6 +59,7 @@ class CustomUserViewSet(UserViewSet):
 class SubscribeViewSet(CreateDestroyViewSet):
     """Вьюсет для подписок."""
     serializer_class = SubscribeSerializer
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         """Получение подписок."""
@@ -131,6 +132,28 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Создание рецепта."""
         serializer.save(author=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        """Обновление рецепта."""
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance,
+            data=request.data,
+            partial=True
+        )
+        if 'tags' not in request.data:
+            return Response(
+                {'tags': ['This field is required.']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(
         detail=False,
@@ -246,6 +269,5 @@ class ShoppingCartViewSet(CreateDestroyViewSet):
                 {'errors': 'Рецепта нет в корзине'},
                 status=status.HTTP_404_NOT_FOUND
             )
-
         cart_item.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
