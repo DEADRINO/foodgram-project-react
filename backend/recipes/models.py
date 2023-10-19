@@ -1,10 +1,11 @@
 from colorfield.fields import ColorField
-from core.const import (MIN_COOKING_TIME, MIN_INGREDIENTS_COUNT,
-                        MIN_RECIPE_NAME, RECIPES_CHAR_FIELD_LENGTH)
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+
+from core.const import (MIN_COOKING_TIME, MIN_INGREDIENTS_COUNT,
+                        MIN_RECIPE_NAME, RECIPES_CHAR_FIELD_LENGTH)
 
 User = get_user_model()
 

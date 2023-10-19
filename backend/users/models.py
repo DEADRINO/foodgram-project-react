@@ -1,6 +1,7 @@
-from core.const import EMAIL_FIELD_LENGTH, USERS_CHAR_FIELD_LENGTH
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+
+from core.const import EMAIL_FIELD_LENGTH, USERS_CHAR_FIELD_LENGTH
 
 
 class CustomUser(AbstractUser):

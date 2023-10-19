@@ -1,11 +1,12 @@
-from core.const import MIN_COOKING_TIME, MIN_INGREDIENTS_COUNT
 from django.contrib.auth.hashers import check_password
 from djoser.serializers import (PasswordSerializer, UserCreateSerializer,
                                 UserSerializer)
 from drf_extra_fields.fields import Base64ImageField
+from rest_framework import serializers
+
+from core.const import MIN_COOKING_TIME, MIN_INGREDIENTS_COUNT
 from recipes.models import (FavoriteRecipe, Ingredient, IngredientAmount,
                             Recipe, ShoppingCart, Tag)
-from rest_framework import serializers
 from users.models import CustomUser, Subscribe
 
 
@@ -105,11 +106,9 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
     def get_is_favorited(self, obj):
         """Получение избранных рецептов."""
-        return (self.context.get('request').user.is_authenticated
-                and FavoriteRecipe.objects.filter(
-                    user=self.context.get('request').user,
-                    favorite_recipe=obj
-        ).exists())
+        return FavoriteRecipe.objects.filter(
+            user=self.context.get('request').user,
+            favorite_recipe=obj).exists()
 
     def get_is_in_shopping_cart(self, obj):
         """Получение рецептов в списке покупок."""
@@ -205,6 +204,9 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         """Создание рецепта."""
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
+        if 'image' not in validated_data or validated_data['image'] is None:
+            raise serializers.ValidationError(
+                {'image': 'Изображение обязательно для рецепта'})
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags)
         self.create_ingredients(ingredients, recipe)
@@ -212,6 +214,10 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Обновление рецепта."""
+        if 'image' not in validated_data or validated_data['image'] is None:
+            raise serializers.ValidationError(
+                {'image': 'Изображение обязательно для рецепта'})
+
         if 'ingredients' in validated_data:
             ingredients = validated_data.pop('ingredients')
             instance.ingredients.clear()
