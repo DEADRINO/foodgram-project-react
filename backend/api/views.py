@@ -67,12 +67,11 @@ class SubscribeViewSet(CreateDestroyViewSet):
         return self.request.user.follower.all()
 
     def get_serializer_context(self):
-        """Получение контекста."""
         context = super().get_serializer_context()
         context['author_id'] = self.kwargs.get('user_id')
-        context['resipes_limit'] = self.request.query_params.get(
-            'recipes_limit',
-        )
+        recipes_limit = self.request.query_params.get('recipes_limit')
+        if recipes_limit:
+            context['recipes_limit'] = int(recipes_limit)
         return context
 
     def perform_create(self, serializer):
@@ -214,21 +213,25 @@ class FavoriteRecipeViewSet(CreateDestroyViewSet):
             )
         )
 
-    @action(methods=('delete',), detail=True)
+    @action(
+        methods=('delete',),
+        detail=True,
+        permission_classes=(IsAuthenticated,)
+    )
     def delete(self, request, recipe_id):
         """Удаление избранных рецептов."""
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         user = request.user
-        if not user.favorite.select_related(
-                'favorite_recipe').filter(
-                    favorite_recipe_id=recipe_id).exists():
-            return Response({'errors': 'Рецепт не в избранном'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        get_object_or_404(
-            FavoriteRecipe,
-            user=user,
-            favorite_recipe_id=recipe_id).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        try:
+            favorite_recipe = FavoriteRecipe.objects.get(
+                user=user,
+                favorite_recipe_id=recipe_id
+            )
+            favorite_recipe.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except FavoriteRecipe.DoesNotExist:
+            raise ValidationError({'errors': 'Рецепт не существует'}, code=400)
 
 
 class ShoppingCartViewSet(CreateDestroyViewSet):
@@ -260,15 +263,18 @@ class ShoppingCartViewSet(CreateDestroyViewSet):
 
     @action(methods=('delete',), detail=True)
     def delete(self, request, recipe_id):
-        """Удаление из корзины покупок."""
-        cart_item = ShoppingCart.objects.filter(
-            user=request.user, recipe_id=recipe_id
-        ).first()
+        """Удаление рецепта из корзины."""
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-        if not cart_item:
-            return Response(
-                {'errors': 'Рецепта нет в корзине'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        cart_item.delete()
+        user = request.user
+
+        try:
+            cart_recipe = ShoppingCart.objects.get(user=user,
+                                                   recipe_id=recipe_id)
+        except ShoppingCart.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND,
+                            data="Recipe not in cart")
+
+        cart_recipe.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

@@ -34,7 +34,7 @@ Password: admin
 # Тестовый пользователь
 http://localhost/
 Email: dabek432@gmail.com
-Password: qwerty1234
+Password: asdfgqwerty
 
 # Документация
 http://localhost/redoc
